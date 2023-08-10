@@ -1,5 +1,4 @@
-const { ethers, upgrades } = require("hardhat");
-const hre = require("hardhat");
+const { ethers } = require("hardhat");
 const dotenv = require("dotenv");
 const sqlCon = require("../db/sqlCon.js");
 const fs = require("fs");
@@ -34,13 +33,14 @@ const main = async () => {
 
     contract_id += 1;
     contract_factory_name = SUITE_CONTRACT + contract_id;
+
     writeFileSync(
       `../contracts/${contract_factory_name}.sol`,
       contractWriter(contract_factory_name)
     );
     cmd.runSync(
       "npx hardhat compile --network polygon_testnet",
-      async (err, data, stterr) => {
+      (err, data, stterr) => {
         if (err) return err;
       }
     );
