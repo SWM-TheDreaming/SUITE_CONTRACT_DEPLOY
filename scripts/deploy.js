@@ -65,6 +65,7 @@ const main = async () => {
       "INSERT INTO CONTRACT_INFO VALUES (?,?,?,?,?)",
       packagedDatas
     );
+    return packagedDatas;
   } catch (e) {
     console.log(e);
   }
