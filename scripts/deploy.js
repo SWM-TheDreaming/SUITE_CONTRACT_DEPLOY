@@ -1,33 +1,24 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// You can also run a script with `npx hardhat run <script>`. If you do that, Hardhat
-// will compile your contracts, add the Hardhat Runtime Environment's members to the
-// global scope, and execute the script.
-const hre = require("hardhat");
+const { ethers } = require("hardhat");
+const dotenv = require("dotenv");
 
-async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const unlockTime = currentTimestampInSeconds + 60;
+dotenv.config();
 
-  const lockedAmount = hre.ethers.parseEther("0.001");
+const main = async () => {
+  // Deploy the SuiteContract contract
+  const SuiteContract = await ethers.getContractFactory("SuiteContract");
+  const SuiteContract2 = await ethers.getContractFactory("SuiteContract2");
+  const contractId = 1;
+  const contractId2 = 2;
+  const suiteContract = await SuiteContract.deploy(contractId);
+  const suiteContract2 = await SuiteContract2.deploy(contractId2);
+  console.log("SuiteContract deployed to:", suiteContract);
+  console.log("SuiteContract2 deployed to:", suiteContract2);
+};
 
-  const lock = await hre.ethers.deployContract("Lock", [unlockTime], {
-    value: lockedAmount,
+// Execute the deployment
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
   });
-
-  await lock.waitForDeployment();
-
-  console.log(
-    `Lock with ${ethers.formatEther(
-      lockedAmount
-    )}ETH and unlock timestamp ${unlockTime} deployed to ${lock.target}`
-  );
-}
-
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
