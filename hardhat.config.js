@@ -7,7 +7,15 @@ dotenv.config();
 module.exports = {
   defaultNetwork: "hardhat",
   networks: {
-    hardhat: {},
+    hardhat: {
+      chainId: 1337,
+      accounts: [
+        {
+          privateKey: process.env.WALLET_PRIVATE_KEY,
+          balance: "10000000000000000000000",
+        },
+      ],
+    },
     polygon_testnet: {
       // Polygon (Matic) 테스트넷 설정
       url:
@@ -18,7 +26,7 @@ module.exports = {
       // Polygon (Matic) 메인넷 설정
       url:
         process.env.POLYGON_MAIN_NET_RPC_PROVIDER_URL + process.env.RPC_API_KEY, // Polygon Mainnet RPC URL
-      accounts: [process.env.WALLET_PRIVATE_KEY], // 지갑 pk 주소
+      accounts: [process.env.WALLET_PRIVATE_KEY], // 지갑 pk 주소 // 지갑 pk 주소
     },
   },
   solidity: {
