@@ -1,11 +1,11 @@
-const { ethers } = require("hardhat");
 const dotenv = require("dotenv");
 const sqlCon = require("../db/sqlCon.js");
 const fs = require("fs");
 const path = require("path");
 const cmd = require("node-cmd");
 const contractWriter = require("../controller/contract_writer.js");
-
+const hre = require("hardhat");
+const hreConfig = require("../hardhat.config.js");
 dotenv.config();
 const conn = sqlCon();
 
@@ -29,7 +29,6 @@ const main = async () => {
     const [result] = await conn.execute("SELECT * FROM CONTRACT_INFO");
     let contract_id = result.length;
     let contract_factory_name;
-    let contract_address;
 
     contract_id += 1;
     contract_factory_name = SUITE_CONTRACT + contract_id;
@@ -38,31 +37,34 @@ const main = async () => {
       `../contracts/${contract_factory_name}.sol`,
       contractWriter(contract_factory_name)
     );
-    cmd.runSync(
-      "npx hardhat compile --network polygon_testnet",
-      (err, data, stterr) => {
-        if (err) return err;
-      }
-    );
+    console.log("파일 작성을 완료했습니다.");
+    cmd.runSync("npx hardhat compile", (err, data, stterr) => {
+      console.log(data);
+      if (err) return err;
+    });
+    console.log("컨트랙트 컴파일을 완료했습니다.");
 
-    const SuiteContract = await ethers.getContractFactory(
-      contract_factory_name
+    const suiteContract = await hre.ethers.deployContract(
+      contract_factory_name,
+      [contract_id]
     );
-    const suiteContract = await SuiteContract.deploy(contract_id);
+    console.log(suiteContract);
 
+    const txResult = await suiteContract.waitForDeployment();
+
+    console.log(`Success!! : ${txResult.target}`);
     const contract_ABI = require(`../artifacts/contracts/${contract_factory_name}.sol/${contract_factory_name}.json`);
-
-    contract_address = suiteContract.target;
 
     packagedDatas = [
       null,
       contract_id,
+      hreConfig.defaultNetwork,
       contract_factory_name,
-      contract_address,
+      txResult.target,
       contract_ABI,
     ];
     await conn.execute(
-      "INSERT INTO CONTRACT_INFO VALUES (?,?,?,?,?)",
+      "INSERT INTO CONTRACT_INFO VALUES (?,?,?,?,?,?)",
       packagedDatas
     );
     return packagedDatas;

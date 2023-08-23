@@ -40,7 +40,7 @@ describe("Suite", () => {
   before(async () => {
     [owner] = await ethers.getSigners();
 
-    const Suite = await ethers.getContractFactory("SuiteContract");
+    const Suite = await ethers.getContractFactory("SuiteContract1");
     normalSuite = await Suite.deploy("1");
     weirdSuite = await Suite.deploy("2");
 
