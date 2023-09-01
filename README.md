@@ -24,6 +24,9 @@ git clone https://github.com/SWM-TheDreaming/SUITE_CONTRACT_DEPLOY.git
 ```shell
 mkdir contracts
 mv .env-mock .env
+
+mkdir controller
+mv /controller_mock/contract_writer.js /controller/contract_writer.js
 ```
 
 ### Step2
