@@ -11,6 +11,7 @@ module.exports = () => {
     user: process.env.DBUSER,
     password: process.env.PASSWORD,
     database: process.env.DATABASE,
+    charset: "utf8mb4",
     Promise: bluebird,
   });
   return connection;

@@ -6,32 +6,37 @@ dotenv.config();
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  defaultNetwork: "polygon_testnet",
+  defaultNetwork: "polygon_mumbai",
   networks: {
-    hardhat: {
-      chainId: 1337,
-      accounts: [
-        {
-          privateKey: process.env.WALLET_PRIVATE_KEY,
-          balance: "10000000000000000000000",
-        },
-      ],
-    },
-    sepolia: {
-      // Polygon (Matic) 테스트넷 설정
-      url: process.env.SEPOLIA_API_URL,
-      accounts: [process.env.WALLET_PRIVATE_KEY], // 지갑 pk 주소
-    },
-    polygon_testnet: {
-      // Polygon (Matic) 테스트넷 설정
+    // hardhat: {
+    //   chainId: 1337,
+    //   accounts: [
+    //     {
+    //       privateKey: process.env.WALLET_PRIVATE_KEY,
+    //       balance: "10000000000000000000000",
+    //     },
+    //   ],
+    // },
+    // sepolia: {
+    //   // Polygon (Matic) 테스트넷 설정
+    //   url: process.env.SEPOLIA_API_URL,
+    //   accounts: [process.env.WALLET_PRIVATE_KEY], // 지갑 pk 주소
+    // },
+
+    // polygon_mainnet: {
+    //   // Polygon (Matic) 메인넷 설정
+    //   url: process.env.POLYGON_MAIN_NET_RPC_PROVIDER_URL,
+    //   accounts: [process.env.WALLET_PRIVATE_KEY], // 지갑 pk 주소 // 지갑 pk 주소
+    // },
+    polygon_mumbai: {
       url: process.env.POLYGON_TEST_NET_RPC_PROVIDER_URL,
-      accounts: [process.env.WALLET_PRIVATE_KEY], // 지갑 pk 주소
-      gasPrice: 2 * 10 ** 12,
-    },
-    polygon_mainnet: {
-      // Polygon (Matic) 메인넷 설정
-      url: process.env.POLYGON_MAIN_NET_RPC_PROVIDER_URL,
-      accounts: [process.env.WALLET_PRIVATE_KEY], // 지갑 pk 주소 // 지갑 pk 주소
+      accounts: [
+        process.env.POLOYGON_MUMBAI_WALLET_PRIVATE_KEY,
+        process.env.POLOYGON_MUMBAI_WALLET_PRIVATE_KEY2,
+        process.env.POLOYGON_MUMBAI_WALLET_PRIVATE_KEY3,
+        process.env.POLOYGON_MUMBAI_WALLET_PRIVATE_KEY4,
+        process.env.POLOYGON_MUMBAI_WALLET_PRIVATE_KEY5,
+      ],
     },
   },
   solidity: {

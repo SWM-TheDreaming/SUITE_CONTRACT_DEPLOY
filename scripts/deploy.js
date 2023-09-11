@@ -6,6 +6,9 @@ const cmd = require("node-cmd");
 const contractWriter = require("../controller/contract_writer.js");
 const hre = require("hardhat");
 const hreConfig = require("../hardhat.config.js");
+const {
+  Contract,
+} = require("hardhat/internal/hardhat-network/stack-traces/model.js");
 dotenv.config();
 const conn = sqlCon();
 
@@ -44,9 +47,16 @@ const main = async () => {
     });
     console.log("컨트랙트 컴파일을 완료했습니다.");
 
+    console.log("지갑 공개 주소를 가져옵니다.");
+    const [selectAccountInfoResult] = await conn.execute(
+      "SELECT public_key FROM ACCOUNT_INFO WHERE alive = ?",
+      [1]
+    );
+    const publicKeys = selectAccountInfoResult.map((row) => row.public_key);
+    console.log(publicKeys);
     const suiteContract = await hre.ethers.deployContract(
       contract_factory_name,
-      [contract_id]
+      [contract_id, publicKeys]
     );
     console.log(suiteContract);
 
