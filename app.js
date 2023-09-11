@@ -52,6 +52,11 @@ app.use(bodyParser.json());
 
 app.use(express.static(path.join(__dirname, "public")));
 
+app.use((req, res, next) => {
+  req.setTimeout(600000); // 10분 (10 * 60 * 1000 밀리초)
+  next();
+});
+
 // router atuo attatch
 const routeFiles = fs
   .readdirSync(path.join(__dirname, "/routes"))
@@ -66,8 +71,8 @@ for await (const routeFile of routeFiles) {
 }
 
 // consumer append
-userRegistrationConsumers();
-suiteRoomContractCreationConsumer();
+// userRegistrationConsumers();
+// suiteRoomContractCreationConsumer();
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

@@ -26,6 +26,7 @@ const consumerSubscribe = {
 const suiteRoomContractCreationConsumer = async () => {
   let tryNum = 1;
   let isErrorOccurInContract = false;
+  let isAccountDeadError = false;
   await consumer.subscribe(consumerSubscribe);
 
   await producer.connect();
@@ -33,7 +34,6 @@ const suiteRoomContractCreationConsumer = async () => {
   await consumer.run({
     eachMessage: async ({ topic, partition, message }) => {
       try {
-        throw new Error();
         const nowTime = moment().unix();
         // 프로듀싱되는 값의 형태에 따라서 스위트룸 계약서 작성 로직을 수행합니다.
         console.log("-----------------------------------");
@@ -46,9 +46,13 @@ const suiteRoomContractCreationConsumer = async () => {
         const txResult = await suiteRoomContractCreationService(data);
         if (txResult.type == "Error") {
           isErrorOccurInContract = true;
-          const contractCreateError = new Error("ContractCreateError");
+          const contractCreateError = new Error("Contract Create Error");
           contractCreateError.data = txResult;
           throw contractCreateError;
+        } else if (txResult.type == "Account_Error") {
+          const accountBlockError = new Error("Account Block Error");
+          contractCreateError.data = txResult;
+          throw accountBlockError;
         }
         console.log(txResult);
         const producedMessage = {
@@ -64,8 +68,6 @@ const suiteRoomContractCreationConsumer = async () => {
             },
           ],
         });
-
-        // Contract-Delivery-Notification 큐에 넣기
       } catch (error) {
         if (isErrorOccurInContract) {
           console.log(error.data);

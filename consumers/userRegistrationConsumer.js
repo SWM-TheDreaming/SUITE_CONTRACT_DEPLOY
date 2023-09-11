@@ -39,11 +39,7 @@ const userRegistrationConsumers = async () => {
         console.log(message.value.toString());
       } catch (e) {
         // Choreography 수행합니다.
-        await consumer.seek({
-          topic: message.topic,
-          partition: message.partition,
-          offset: message.offset,
-        });
+        
         // await producer.send(producerProducing("message dto in here"));
       }
     },

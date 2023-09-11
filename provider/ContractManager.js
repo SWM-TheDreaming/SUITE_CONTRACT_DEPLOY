@@ -9,12 +9,9 @@ moment.tz.setDefault("Asia/Seoul");
 const conn = sqlCon();
 
 class ContractManager {
-  constructor() {
+  constructor(wallet_private_key) {
     this.provider = provider;
-    this.wallet = new ethers.Wallet(
-      process.env.WALLET_PRIVATE_KEY,
-      this.provider
-    );
+    this.wallet = new ethers.Wallet(wallet_private_key, this.provider);
   }
 
   async getContract(_hashed_key) {

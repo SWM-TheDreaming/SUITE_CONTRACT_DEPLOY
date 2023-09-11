@@ -3,7 +3,9 @@ import moment from "moment-timezone";
 import { makeGroupHashedID } from "../lib/funcs.js";
 import dotenv from "dotenv";
 import ContractManager from "../provider/ContractManager.js";
-
+import { selectAccountKey } from "../lib/funcs.js";
+import { ethers } from "ethers";
+import provider from "../provider/provider.js";
 dotenv.config();
 moment.tz.setDefault("Asia/Seoul");
 
@@ -57,16 +59,16 @@ export const start = async (req, res) => {
       body.title.replace(" ", "")
     );
 
-    const [contractMetaInfoLength, contractInfoLength, isHashedKeyExist] =
+    const [[contractMetaInfo], [contractInfo], [isHashedKeyExist]] =
       await Promise.all([
         conn.execute("SELECT id FROM CONTRACT_META_INFO"),
-        conn.execute("SELECT id FROM CONTRACT_INFO"),
+        conn.execute("SELECT * FROM CONTRACT_INFO"),
         conn.execute("SELECT id FROM CONTRACT_META_INFO WHERE hashed_key = ?", [
           hashedKey.crypt,
         ]),
       ]);
 
-    if (isHashedKeyExist[0].length !== 0) {
+    if (isHashedKeyExist.length !== 0) {
       return res.status(403).json({
         error: "Forbidden",
         message:
@@ -74,8 +76,28 @@ export const start = async (req, res) => {
       });
     }
 
-    const lbContractId =
-      (contractMetaInfoLength[0].length % contractInfoLength[0].length) + 1;
+    const lbContractId = (contractMetaInfo.length % contractInfo.length) + 1;
+
+    const [availableAccountsResult] = await conn.execute(
+      "SELECT account_key FROM ACCOUNT_INFO WHERE alive = ?",
+      [1]
+    );
+
+    const accountRndId = Math.floor(
+      1 + Math.random() * availableAccountsResult.length
+    );
+
+    req.on("timeout", async () => {
+      await conn.execute("UPDATE ACCOUNT_INFO SET alive = ? WHERE id = ?", [
+        false,
+        accountRndId,
+      ]);
+      res.status(400).json({
+        error: "요청이 시간 초과되었습니다. 계좌를 불용처리했습니다.",
+      });
+    });
+
+    const accountPK = await selectAccountKey(accountRndId);
 
     await conn.execute(
       "INSERT INTO CONTRACT_META_INFO VALUES (?,?,?,?,?,?,?)",
@@ -90,7 +112,8 @@ export const start = async (req, res) => {
       ]
     );
 
-    const contractManager = new ContractManager();
+    const contractManager = new ContractManager(accountPK);
+
     const contract = await contractManager.getContract(hashedKey.crypt);
 
     const txData = contract.interface.encodeFunctionData("startSuiteRoom", [
@@ -108,7 +131,7 @@ export const start = async (req, res) => {
     ]);
 
     const gasFee = await contractManager.provider.getFeeData();
-    const gasPrice = gasFee.maxFeePerGas + gasFee.maxPriorityFeePerGas;
+    const gasPrice = gasFee.maxFeePerGas;
     const gasLimit = await contractManager.provider.estimateGas({
       to: contractManager.contractAddress,
       data: txData,
@@ -117,10 +140,11 @@ export const start = async (req, res) => {
 
     const tx = {
       to: contractManager.contractAddress,
-      gasLimit: gasLimit * BigInt(2),
+      gasLimit,
       gasPrice,
       data: txData,
     };
+    console.log(tx);
 
     const sentTx = await contractManager.wallet.sendTransaction(tx);
     const receipt = await sentTx.wait();
@@ -160,141 +184,54 @@ export const start = async (req, res) => {
   }
 };
 
-export const getGroupContract = async (req, res) => {
-  try {
-    const { suite_room_id, title } = req.body;
-    const nowTime = moment().format("YYYY-M-D H:m:s");
-    const userId = req.decoded.sub.split("@")[0];
-
-    const hashedKey = await makeGroupHashedID(
-      suite_room_id,
-      title.replace(" ", "")
-    );
-
-    const [isHashedKeyExist] = await Promise.all([
-      conn.execute("SELECT id FROM CONTRACT_META_INFO WHERE hashed_key = ?", [
-        hashedKey.crypt,
-      ]),
-    ]);
-
-    if (isHashedKeyExist.length === 0) {
-      return res.status(403).json({
-        error: "Forbidden",
-        message: "존재하지 않는 Hashed_Key 입니다.",
-      });
-    }
-
-    const contractManager = new ContractManager();
-    const contract = await contractManager.getContract(hashedKey.crypt);
-    const tx = await contract.getGroupContract(hashedKey.crypt);
-
-    const transformData = (data, keys) => {
-      return data.map((entry) =>
-        entry.reduce((obj, value, idx) => {
-          obj[keys[idx]] = typeof value === "bigint" ? value.toString() : value;
-          return obj;
-        }, {})
-      );
-    };
-
-    const groupContractInfoKeys = [
-      "user_id",
-      "title",
-      "group_capacity",
-      "group_deposit_per_person",
-      "group_period",
-      "recruitment_period",
-      "minimum_attendance",
-      "minimum_mission_completion",
-      "isRunning",
-    ];
-    const depositKeys = [
-      "user_id",
-      "deposit_amount",
-      "payment_timestamp",
-      "signature",
-      "kicked_flag",
-    ];
-
-    const groupContractInfo = transformData(
-      [tx[0].slice(0, 9)],
-      groupContractInfoKeys
-    )[0];
-    const participantDeposits = transformData(tx[1], depositKeys);
-    const finalGroupDeposits = transformData(tx[2], depositKeys);
-    const blockNumber = await contractManager.provider.getBlock();
-
-    await conn.execute(
-      "INSERT INTO TX_DASHBOARD VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-      [
-        null,
-        hashedKey.crypt,
-        "READ",
-        "READ CONTRACT",
-        nowTime,
-        "getGroupContract",
-        "계약서 내용 및 스터디 참여자 장부 조회",
-        userId,
-        {
-          groupContractInfo,
-          participantDeposits,
-          finalGroupDeposits,
-        },
-        contract.target,
-        blockNumber.number,
-        0,
-      ]
-    );
-    return res.status(201).json({
-      message: "계약자의 스위트룸 정보를 불러옵니다.",
-      groupContractInfo,
-      participantDeposits,
-      finalGroupDeposits,
-    });
-  } catch (err) {
-    console.error(err);
-    return res.status(409).json({
-      message: err,
-    });
-  }
-};
-
 export const stop = async (req, res) => {
   try {
     const body = req.body;
 
     const nowTime = moment().format("YYYY-M-D H:m:s");
-    const userId = req.decoded.sub.split("@")[0];
+
     const hashedKey = await makeGroupHashedID(
       body.suite_room_id,
       body.title.replace(" ", "")
     );
 
-    const [isHashedKeyExist] = await Promise.all([
-      conn.execute("SELECT id FROM CONTRACT_META_INFO WHERE hashed_key = ?", [
+    const [[contractMetaInfo]] = await Promise.all([
+      conn.execute("SELECT * FROM CONTRACT_META_INFO WHERE hashed_key = ?", [
         hashedKey.crypt,
       ]),
     ]);
 
-    if (isHashedKeyExist.length === 0) {
+    if (contractMetaInfo.length === 0) {
       return res.status(403).json({
         error: "Forbidden",
         message: "존재하지 않는 Hashed_Key 입니다.",
       });
     }
+    const [availableAccountsResult] = await conn.execute(
+      "SELECT account_key FROM ACCOUNT_INFO WHERE alive = ?",
+      [1]
+    );
 
-    const contractManager = new ContractManager();
+    const accountRndId = Math.floor(
+      1 + Math.random() * availableAccountsResult.length
+    );
+
+    const accountPK = await selectAccountKey(accountRndId);
+    console.log(accountPK);
+    const contractManager = new ContractManager(accountPK);
+    console.log(contractManager);
     const contract = await contractManager.getContract(hashedKey.crypt);
-
+    console.log(contract);
     const txData = contract.interface.encodeFunctionData("stopSuiteRoom", [
       hashedKey.crypt,
       body.participant_ids,
       body.participant_mission,
       body.participant_attendance,
     ]);
+    console.log(txData);
 
     const gasFee = await contractManager.provider.getFeeData();
-    const gasPrice = gasFee.maxFeePerGas + gasFee.maxPriorityFeePerGas;
+    const gasPrice = gasFee.maxFeePerGas;
     const gasLimit = await contractManager.provider.estimateGas({
       to: contractManager.contractAddress,
       data: txData,
@@ -303,11 +240,11 @@ export const stop = async (req, res) => {
 
     const tx = {
       to: contractManager.contractAddress,
-      gasLimit: gasLimit * BigInt(2),
+      gasLimit,
       gasPrice,
       data: txData,
     };
-
+    console.log(tx);
     const sentTx = await contractManager.wallet.sendTransaction(tx);
     const receipt = await sentTx.wait();
     const txFee = parseInt(receipt.gasUsed) * parseInt(receipt.gasPrice);
@@ -342,52 +279,86 @@ export const stop = async (req, res) => {
   }
 };
 
-export const getTransactionRead = async (req, res) => {
+export const updateAccount = async (req, res) => {
   try {
+    const nowTime = moment().format("YYYY-M-D H:m:s");
     const body = req.body;
+    const { new_account_key, new_public_key } = body;
 
-    const hashedKey = await makeGroupHashedID(
-      body.suite_room_id,
-      body.title.replace(" ", "")
+    const [unusableAccountResult] = conn.execute(
+      "SELECT * FROM ACCOUNT_INFO WHERE alive = ? LIMIT 1",
+      [false]
     );
 
-    const [txResults] = await conn.execute(
-      "SELECT * FROM TX_DASHBOARD WHERE hashed_key = ? and tx_action = ?",
-      [hashedKey.crypt, "READ"]
+    if (unusableAccountResult.length === 0) {
+      return res.status(403).json({
+        error: "Forbidden",
+        message: "불가용 계정이 존재하지 않아 키를 업데이트 할 수 없습니다.",
+      });
+    }
+
+    const [availableAccountsResult] = await conn.execute(
+      "SELECT account_key FROM ACCOUNT_INFO WHERE alive = ?",
+      [1]
     );
+
+    const [contractInfoResults] = await conn.execute(
+      "SELECT contract_address, contractABI FROM CONTRACT_INFO"
+    );
+
+    for await (const contractInfo of contractInfoResults) {
+      const accountRndId = Math.floor(
+        1 + Math.random() * availableAccountsResult.length
+      );
+      const accountPK = await selectAccountKey(accountRndId);
+
+      const wallet = new ethers.Wallet(accountPK, provider);
+      const contract = new ethers.Contract(
+        contractInfo.contract_address,
+        contractInfo.contractABI,
+        wallet
+      );
+      const txData = contract.interface.encodeFunctionData("addOwners", [
+        [new_public_key],
+      ]);
+      const gasFee = await provider.getFeeData();
+      const gasPrice = gasFee.maxFeePerGas;
+      const gasLimit = await provider.estimateGas({
+        to: contractInfo.contract_address,
+        data: txData,
+        from: wallet.address,
+      });
+
+      const tx = {
+        to: contractInfo.contract_address,
+        gasLimit,
+        gasPrice,
+        data: txData,
+      };
+      const sentTx = await wallet.sendTransaction(tx);
+      const receipt = await sentTx.wait();
+      console.log({
+        message: "계좌를 성공적으로 업데이트했습니다.",
+        receipt,
+        txFee,
+        blockHash: receipt.blockHash,
+        txHash: sentTx.hash,
+        contractAddress: receipt.to,
+      });
+    }
+
+    await conn.execute(
+      "UPDATE ACCOUNT_INFO SET account_key = ? , public_key = ? WHERE id = ?",
+      [new_account_key, new_public_key, unusableAccountResult[0].id]
+    );
+
     return res.status(201).json({
-      message: "스마트 컨트랙트 내역을 정상적으로 조회했습니다.",
-      txResults,
+      message: "계좌를 성공적으로 업데이트했습니다.",
     });
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    console.error(error);
     return res.status(409).json({
-      message: e.reason,
-    });
-  }
-};
-
-export const getTransactionTx = async (req, res) => {
-  try {
-    const body = req.body;
-
-    const hashedKey = await makeGroupHashedID(
-      body.suite_room_id,
-      body.title.replace(" ", "")
-    );
-
-    const [txResults] = await conn.execute(
-      "SELECT * FROM TX_DASHBOARD WHERE hashed_key = ? and tx_action = ?",
-      [hashedKey.crypt, "TX"]
-    );
-    return res.status(201).json({
-      message: "스마트 컨트랙트 내역을 정상적으로 조회했습니다.",
-      txResults,
-    });
-  } catch (e) {
-    console.error(e);
-    return res.status(409).json({
-      message: e.reason,
+      message: error.reason,
     });
   }
 };

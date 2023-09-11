@@ -3,7 +3,10 @@ import moment from "moment-timezone";
 import { makeGroupHashedID } from "../lib/funcs.js";
 import dotenv from "dotenv";
 import ContractManager from "../provider/ContractManager.js";
-
+import {
+  selectAccountKey,
+  handleTimeoutWithAccountDisable,
+} from "../lib/funcs.js";
 dotenv.config();
 moment.tz.setDefault("Asia/Seoul");
 
@@ -11,6 +14,8 @@ const conn = sqlCon();
 
 export const suiteRoomContractCreationService = async (data) => {
   const nowTime = moment().format("YYYY-M-D H:m:s");
+  const timeout = 10 * 60 * 1000;
+  let timer;
 
   try {
     const hashedKey = await makeGroupHashedID(
@@ -38,13 +43,34 @@ export const suiteRoomContractCreationService = async (data) => {
     console.log("key 유일성 검증 완료------------------------------");
     const lbContractId =
       (contractMetaInfoLength[0].length % contractInfoLength[0].length) + 1;
+    const [availableAccountsResult] = await conn.execute(
+      "SELECT account_key FROM ACCOUNT_INFO WHERE alive = ?",
+      [1]
+    );
+
+    const accountRndId = Math.floor(
+      1 + Math.random() * availableAccountsResult.length
+    );
+
+    timer = setTimeout(async () => {
+      try {
+        await handleTimeoutWithAccountDisable(conn);
+      } catch (error) {
+        return {
+          type: "Account_Error",
+          message: "Account 불용 발생. 새로운 계정 추가 필요",
+        };
+      }
+    }, timeout);
+
+    const accountPK = await selectAccountKey(accountRndId);
 
     await conn.execute(
-      "INSERT INTO CONTRACT_META_INFO VALUES (?,?,?,?,?,?,?)",
+      "INSERT INTO CONTRACT_META_INFO VALUES (?,?,?,?,?,?,?,?)",
       [
         null,
-        data.suite_room_id,
-        data.title.replace(" ", ""),
+        body.suite_room_id,
+        body.title.replace(" ", ""),
         hashedKey.crypt,
         lbContractId,
         nowTime,
@@ -53,7 +79,7 @@ export const suiteRoomContractCreationService = async (data) => {
     );
 
     console.log("계약서 메타 정보 저장 완료------------------------------");
-    const contractManager = new ContractManager();
+    const contractManager = new ContractManager(accountPK);
     const contract = await contractManager.getContract(hashedKey.crypt);
     console.log("계약서 컨트랙트 이서 시작------------------------------");
     const txData = contract.interface.encodeFunctionData("startSuiteRoom", [
@@ -71,7 +97,7 @@ export const suiteRoomContractCreationService = async (data) => {
     ]);
 
     const gasFee = await contractManager.provider.getFeeData();
-    const gasPrice = gasFee.maxFeePerGas + gasFee.maxPriorityFeePerGas;
+    const gasPrice = gasFee.maxFeePerGas;
     const gasLimit = await contractManager.provider.estimateGas({
       to: contractManager.contractAddress,
       data: txData,
@@ -109,6 +135,7 @@ export const suiteRoomContractCreationService = async (data) => {
       ]
     );
     console.log("계약서 이력 작성 완료------------------------------");
+    clearTimeout(timer);
     return {
       type: "Success",
       message: "스위트룸을 성공적으로 시작했습니다.",
