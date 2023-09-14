@@ -3,7 +3,7 @@ const sqlCon = require("../db/sqlCon.js");
 const fs = require("fs");
 const path = require("path");
 const cmd = require("node-cmd");
-const contractWriter = require("../controller/contract_writer.js");
+const contractWriter = require("../controller/test_contract_writer.js");
 const hre = require("hardhat");
 const hreConfig = require("../hardhat.config.js");
 const {
@@ -29,7 +29,10 @@ const writeFileSync = (filePath, content) => {
 const main = async () => {
   try {
     // Deploy the SuiteContract contract
-    const [result] = await conn.execute("SELECT * FROM CONTRACT_INFO");
+    const [result] = await conn.execute(
+      "SELECT * FROM CONTRACT_INFO WHERE network = ?",
+      ["polygon_mumbai"]
+    );
     let contract_id = result.length;
     let contract_factory_name;
 
@@ -49,8 +52,8 @@ const main = async () => {
 
     console.log("지갑 공개 주소를 가져옵니다.");
     const [selectAccountInfoResult] = await conn.execute(
-      "SELECT public_key FROM ACCOUNT_INFO WHERE alive = ?",
-      [1]
+      "SELECT public_key FROM ACCOUNT_INFO WHERE alive = ? and network = ?",
+      [1, "mumbai"]
     );
     const publicKeys = selectAccountInfoResult.map((row) => row.public_key);
     console.log(publicKeys);
@@ -68,7 +71,7 @@ const main = async () => {
     packagedDatas = [
       null,
       contract_id,
-      hreConfig.defaultNetwork,
+      "polygon_mumbai",
       contract_factory_name,
       txResult.target,
       contract_ABI,

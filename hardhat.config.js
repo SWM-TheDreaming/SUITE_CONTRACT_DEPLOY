@@ -23,11 +23,11 @@ module.exports = {
     //   accounts: [process.env.WALLET_PRIVATE_KEY], // 지갑 pk 주소
     // },
 
-    // polygon_mainnet: {
-    //   // Polygon (Matic) 메인넷 설정
-    //   url: process.env.POLYGON_MAIN_NET_RPC_PROVIDER_URL,
-    //   accounts: [process.env.WALLET_PRIVATE_KEY], // 지갑 pk 주소 // 지갑 pk 주소
-    // },
+    polygon_main: {
+      // Polygon (Matic) 메인넷 설정
+      url: process.env.POLYGON_MAIN_NET_RPC_PROVIDER_URL,
+      accounts: [process.env.POLOYGON_MAIN_WALLET_PRIVATE_KEY], // 지갑 pk 주소 // 지갑 pk 주소
+    },
     polygon_mumbai: {
       url: process.env.POLYGON_TEST_NET_RPC_PROVIDER_URL,
       accounts: [
