@@ -3,10 +3,7 @@ import moment from "moment-timezone";
 import { makeGroupHashedID } from "../lib/funcs.js";
 import dotenv from "dotenv";
 import ContractManager from "../provider/ContractManager.js";
-import {
-  selectAccountKey,
-  handleTimeoutWithAccountDisable,
-} from "../lib/funcs.js";
+
 dotenv.config();
 moment.tz.setDefault("Asia/Seoul");
 
@@ -43,27 +40,6 @@ export const suiteRoomContractCreationService = async (data) => {
     console.log("key 유일성 검증 완료------------------------------");
     const lbContractId =
       (contractMetaInfoLength[0].length % contractInfoLength[0].length) + 1;
-    const [availableAccountsResult] = await conn.execute(
-      "SELECT account_key FROM ACCOUNT_INFO WHERE alive = ?",
-      [1]
-    );
-
-    const accountRndId = Math.floor(
-      1 + Math.random() * availableAccountsResult.length
-    );
-
-    timer = setTimeout(async () => {
-      try {
-        await handleTimeoutWithAccountDisable(conn);
-      } catch (error) {
-        return {
-          type: "Account_Error",
-          message: "Account 불용 발생. 새로운 계정 추가 필요",
-        };
-      }
-    }, timeout);
-
-    const accountPK = await selectAccountKey(accountRndId);
 
     await conn.execute(
       "INSERT INTO CONTRACT_META_INFO VALUES (?,?,?,?,?,?,?,?)",
@@ -79,7 +55,9 @@ export const suiteRoomContractCreationService = async (data) => {
     );
 
     console.log("계약서 메타 정보 저장 완료------------------------------");
-    const contractManager = new ContractManager(accountPK);
+    const contractManager = new ContractManager(
+      process.env.POLYGON_MAIN_NET_WALLET_PRIVATE_KEY
+    );
     const contract = await contractManager.getContract(hashedKey.crypt);
     console.log("계약서 컨트랙트 이서 시작------------------------------");
     const txData = contract.interface.encodeFunctionData("startSuiteRoom", [
@@ -135,7 +113,7 @@ export const suiteRoomContractCreationService = async (data) => {
       ]
     );
     console.log("계약서 이력 작성 완료------------------------------");
-    clearTimeout(timer);
+
     return {
       type: "Success",
       message: "스위트룸을 성공적으로 시작했습니다.",

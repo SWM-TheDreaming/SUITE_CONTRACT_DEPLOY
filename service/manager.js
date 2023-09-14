@@ -73,6 +73,7 @@ export const start = async (req, res) => {
           "이미 존재하는 hashedKey를 가진 suite_room_id와 title 쌍입니다.",
       });
     }
+    console.log("key 유일성 검증 완료------------------------------");
 
     const lbContractId = (contractMetaInfo.length % contractInfo.length) + 1;
 
@@ -88,13 +89,14 @@ export const start = async (req, res) => {
         nowTime,
       ]
     );
+    console.log("계약서 메타 정보 저장 완료------------------------------");
 
     const contractManager = new ContractManager(
       process.env.POLYGON_MAIN_NET_WALLET_PRIVATE_KEY
     );
 
     const contract = await contractManager.getContract(hashedKey.crypt);
-
+    console.log("계약서 컨트랙트 이서 시작------------------------------");
     const txData = contract.interface.encodeFunctionData("startSuiteRoom", [
       hashedKey.crypt,
       body.leader_id,
@@ -126,7 +128,9 @@ export const start = async (req, res) => {
     console.log(tx);
 
     const sentTx = await contractManager.wallet.sendTransaction(tx);
+    console.log("계약서 컨트랙트 이서 진행------------------------------");
     const receipt = await sentTx.wait();
+    console.log("계약서 컨트랙트 이서 완료------------------------------");
     const txFee = parseInt(receipt.gasUsed) * parseInt(receipt.gasPrice);
 
     await conn.execute(
@@ -146,6 +150,7 @@ export const start = async (req, res) => {
         txFee,
       ]
     );
+    console.log("계약서 이력 작성 완료------------------------------");
 
     return res.status(201).json({
       message: "스위트룸을 성공적으로 시작했습니다.",
