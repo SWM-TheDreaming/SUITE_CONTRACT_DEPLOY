@@ -9,15 +9,6 @@ moment.tz.setDefault("Asia/Seoul");
 
 const conn = sqlCon();
 
-const selectAccountKey = async (accountId) => {
-  const [accountInfoResult] = await conn.execute(
-    "SELECT account_key FROM ACCOUNT_INFO WHERE id = ?",
-    [accountId]
-  );
-
-  return accountInfoResult[0].account_key;
-};
-
 export const getGroupContract = async (req, res) => {
   try {
     const { suite_room_id, title } = req.body;
@@ -42,18 +33,9 @@ export const getGroupContract = async (req, res) => {
       });
     }
 
-    const [availableAccountsResult] = await conn.execute(
-      "SELECT account_key FROM ACCOUNT_INFO WHERE alive = ?",
-      [1]
+    const contractManager = new ContractManager(
+      process.env.POLYGON_MAIN_NET_WALLET_PRIVATE_KEY
     );
-
-    const accountRndId = Math.floor(
-      1 + Math.random() * availableAccountsResult.length
-    );
-
-    const accountPK = await selectAccountKey(accountRndId);
-
-    const contractManager = new ContractManager(accountPK);
     const contract = await contractManager.getContract(hashedKey.crypt);
     const tx = await contract.getGroupContract(hashedKey.crypt);
 

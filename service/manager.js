@@ -3,9 +3,7 @@ import moment from "moment-timezone";
 import { makeGroupHashedID } from "../lib/funcs.js";
 import dotenv from "dotenv";
 import ContractManager from "../provider/ContractManager.js";
-import { selectAccountKey } from "../lib/funcs.js";
-import { ethers } from "ethers";
-import provider from "../provider/provider.js";
+
 dotenv.config();
 moment.tz.setDefault("Asia/Seoul");
 
@@ -78,27 +76,6 @@ export const start = async (req, res) => {
 
     const lbContractId = (contractMetaInfo.length % contractInfo.length) + 1;
 
-    const [availableAccountsResult] = await conn.execute(
-      "SELECT account_key FROM ACCOUNT_INFO WHERE alive = ?",
-      [1]
-    );
-
-    const accountRndId = Math.floor(
-      1 + Math.random() * availableAccountsResult.length
-    );
-
-    req.on("timeout", async () => {
-      await conn.execute("UPDATE ACCOUNT_INFO SET alive = ? WHERE id = ?", [
-        false,
-        accountRndId,
-      ]);
-      res.status(400).json({
-        error: "요청이 시간 초과되었습니다. 계좌를 불용처리했습니다.",
-      });
-    });
-
-    const accountPK = await selectAccountKey(accountRndId);
-
     await conn.execute(
       "INSERT INTO CONTRACT_META_INFO VALUES (?,?,?,?,?,?,?)",
       [
@@ -112,7 +89,9 @@ export const start = async (req, res) => {
       ]
     );
 
-    const contractManager = new ContractManager(accountPK);
+    const contractManager = new ContractManager(
+      process.env.POLYGON_MAIN_NET_WALLET_PRIVATE_KEY
+    );
 
     const contract = await contractManager.getContract(hashedKey.crypt);
 
@@ -207,18 +186,10 @@ export const stop = async (req, res) => {
         message: "존재하지 않는 Hashed_Key 입니다.",
       });
     }
-    const [availableAccountsResult] = await conn.execute(
-      "SELECT account_key FROM ACCOUNT_INFO WHERE alive = ?",
-      [1]
-    );
 
-    const accountRndId = Math.floor(
-      1 + Math.random() * availableAccountsResult.length
+    const contractManager = new ContractManager(
+      process.env.POLYGON_MAIN_NET_WALLET_PRIVATE_KEY
     );
-
-    const accountPK = await selectAccountKey(accountRndId);
-    console.log(accountPK);
-    const contractManager = new ContractManager(accountPK);
     console.log(contractManager);
     const contract = await contractManager.getContract(hashedKey.crypt);
     console.log(contract);
@@ -275,90 +246,6 @@ export const stop = async (req, res) => {
     console.error(err);
     return res.status(409).json({
       message: err.reason,
-    });
-  }
-};
-
-export const updateAccount = async (req, res) => {
-  try {
-    const nowTime = moment().format("YYYY-M-D H:m:s");
-    const body = req.body;
-    const { new_account_key, new_public_key } = body;
-
-    const [unusableAccountResult] = conn.execute(
-      "SELECT * FROM ACCOUNT_INFO WHERE alive = ? LIMIT 1",
-      [false]
-    );
-
-    if (unusableAccountResult.length === 0) {
-      return res.status(403).json({
-        error: "Forbidden",
-        message: "불가용 계정이 존재하지 않아 키를 업데이트 할 수 없습니다.",
-      });
-    }
-
-    const [availableAccountsResult] = await conn.execute(
-      "SELECT account_key FROM ACCOUNT_INFO WHERE alive = ?",
-      [1]
-    );
-
-    const [contractInfoResults] = await conn.execute(
-      "SELECT contract_address, contractABI FROM CONTRACT_INFO"
-    );
-
-    for await (const contractInfo of contractInfoResults) {
-      const accountRndId = Math.floor(
-        1 + Math.random() * availableAccountsResult.length
-      );
-      const accountPK = await selectAccountKey(accountRndId);
-
-      const wallet = new ethers.Wallet(accountPK, provider);
-      const contract = new ethers.Contract(
-        contractInfo.contract_address,
-        contractInfo.contractABI,
-        wallet
-      );
-      const txData = contract.interface.encodeFunctionData("addOwners", [
-        [new_public_key],
-      ]);
-      const gasFee = await provider.getFeeData();
-      const gasPrice = gasFee.maxFeePerGas;
-      const gasLimit = await provider.estimateGas({
-        to: contractInfo.contract_address,
-        data: txData,
-        from: wallet.address,
-      });
-
-      const tx = {
-        to: contractInfo.contract_address,
-        gasLimit,
-        gasPrice,
-        data: txData,
-      };
-      const sentTx = await wallet.sendTransaction(tx);
-      const receipt = await sentTx.wait();
-      console.log({
-        message: "계좌를 성공적으로 업데이트했습니다.",
-        receipt,
-        txFee,
-        blockHash: receipt.blockHash,
-        txHash: sentTx.hash,
-        contractAddress: receipt.to,
-      });
-    }
-
-    await conn.execute(
-      "UPDATE ACCOUNT_INFO SET account_key = ? , public_key = ? WHERE id = ?",
-      [new_account_key, new_public_key, unusableAccountResult[0].id]
-    );
-
-    return res.status(201).json({
-      message: "계좌를 성공적으로 업데이트했습니다.",
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(409).json({
-      message: error.reason,
     });
   }
 };

@@ -8,6 +8,5 @@ const router = express.Router();
 router.post("/signup", signup);
 router.post("/start", verifyToken, start);
 router.post("/stop", verifyToken, stop);
-router.post("/update/account", verifyToken, updateAccount);
 
 export default router;
