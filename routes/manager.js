@@ -1,6 +1,6 @@
 import express from "express";
 import verifyToken from "../middlewares/accessControl.js";
-import { signup, start, stop, updateAccount } from "../service/manager.js";
+import { signup, start, stop } from "../service/manager.js";
 
 const router = express.Router();
 

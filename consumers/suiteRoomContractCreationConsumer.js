@@ -1,9 +1,8 @@
 import kafka from "../kafka/kafka.js";
 import sqlCon from "../db/sqlCon.js";
-import axios from "axios";
 import dotenv from "dotenv";
 import moment from "moment-timezone";
-import { suiteRoomContractCreationService } from "../service/suiteRoomContractCreationService.js";
+import { suiteRoomContractCreationService } from "../service/producer/suiteRoomContractCreationService.js";
 import { slackMessageSender } from "../slack/slackMessageSender.js";
 
 moment.tz.setDefault("Asia/Seoul");
@@ -26,7 +25,6 @@ const consumerSubscribe = {
 const suiteRoomContractCreationConsumer = async () => {
   let tryNum = 1;
   let isErrorOccurInContract = false;
-  let isAccountDeadError = false;
   await consumer.subscribe(consumerSubscribe);
 
   await producer.connect();
@@ -36,7 +34,7 @@ const suiteRoomContractCreationConsumer = async () => {
       try {
         const nowTime = moment().unix();
         // 프로듀싱되는 값의 형태에 따라서 스위트룸 계약서 작성 로직을 수행합니다.
-        console.log("-----------------------------------");
+        console.log("----------------Message Consuming-------------------");
         const messageJson = JSON.parse(message.value.toString("utf-8"));
         const data = messageJson.data;
 
@@ -54,6 +52,8 @@ const suiteRoomContractCreationConsumer = async () => {
           contractCreateError.data = txResult;
           throw accountBlockError;
         }
+        console.log("----------------Finish Consuming-------------------");
+        console.log("----------------Consumed Data Info-------------------");
         console.log(txResult);
         const producedMessage = {
           uuid: "ContractDeliveryNotificationProducer/" + nowTime,
@@ -78,16 +78,22 @@ const suiteRoomContractCreationConsumer = async () => {
             "https://editto.postman.co/workspace/SWM~d8e7edc0-3d37-4984-a08f-148f327e452a/request/22332085-778acaa7-635e-4f54-9c5b-636bc30d5d93"
           );
         } else if (tryNum < 4) {
+          console.log("----------------Error Occurred!-------------------");
           tryNum += 1;
           console.log(error);
-
           console.log(message.offset);
+          console.log(
+            "----------------Compensating transaction-------------------"
+          );
           consumer.seek({
             topic: topic,
             partition: partition,
             offset: message.offset,
           });
         } else {
+          console.log(
+            "----------------Three Time Over. Check Slack Error Msg-------------------"
+          );
           slackMessageSender(
             topic,
             message,

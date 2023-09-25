@@ -25,10 +25,9 @@ export const signup = async (req, res) => {
       });
     }
 
-    await conn.execute("INSERT INTO user_auth_info VALUES (?,?,?,?,?,?)", [
+    await conn.execute("INSERT INTO user_auth_info VALUES (?,?,?,?,?)", [
       null,
       body.user_id,
-      body.user_name,
       body.account_status,
       nowTime,
       nowTime,
