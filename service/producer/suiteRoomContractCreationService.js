@@ -11,8 +11,6 @@ const conn = sqlCon();
 
 export const suiteRoomContractCreationService = async (data) => {
   const nowTime = moment().format("YYYY-M-D H:m:s");
-  const timeout = 10 * 60 * 1000;
-  let timer;
 
   try {
     const hashedKey = await makeGroupHashedID(

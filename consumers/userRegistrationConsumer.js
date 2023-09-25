@@ -1,11 +1,6 @@
 import kafka from "../kafka/kafka.js";
-import sqlCon from "../db/sqlCon.js";
-import moment from "moment-timezone";
 import { slackMessageSender } from "../slack/slackMessageSender.js";
-
-moment.tz.setDefault("Asia/Seoul");
-
-const conn = sqlCon();
+import { userRregistrationService } from "../service/producer/userRegistrationService.js";
 
 const producer = kafka.producer();
 const consumer = kafka.consumer({
@@ -19,17 +14,6 @@ const consumerSubscribe = {
   fromBeginning: true,
 };
 
-const producerProducing = (message) => {
-  return {
-    topic: TOPIC,
-    messages: [
-      {
-        value: JSON.stringify(message),
-      },
-    ],
-  };
-};
-
 const userRegistrationConsumers = async () => {
   let tryNum = 1;
   await consumer.subscribe(consumerSubscribe);
@@ -39,21 +23,11 @@ const userRegistrationConsumers = async () => {
   await consumer.run({
     eachMessage: async ({ topic, partition, message }) => {
       try {
-        const nowTime = moment().format("YYYY-M-D H:m:s");
-        // 프로듀싱되는 값의 형태에 따라서 스위트룸 계약서 작성 로직을 수행합니다.
         console.log("----------------Message Consuming-------------------");
         const messageJson = JSON.parse(message.value.toString("utf-8"));
         const data = messageJson.data;
-        await conn.execute("INSERT INTO USER_AUTH_INFO VALUES (?,?,?,?,?)", [
-          null,
-          data.memberId,
-          data.accountStatus,
-          nowTime,
-          nowTime,
-        ]);
-        console.log("----------------Finish Consuming-------------------");
-        console.log("----------------Consumed Data Info-------------------");
-        console.log(data);
+        const result = await userRregistrationService(data);
+        console.log(result);
       } catch (error) {
         if (tryNum < 4) {
           console.log("----------------Error Occurred!-------------------");
