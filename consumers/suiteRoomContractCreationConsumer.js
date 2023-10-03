@@ -2,7 +2,7 @@ import kafka from "../kafka/kafka.js";
 import sqlCon from "../db/sqlCon.js";
 import dotenv from "dotenv";
 import moment from "moment-timezone";
-import { suiteRoomContractCreationService } from "../service/producer/suiteRoomContractCreationService.js";
+import { suiteRoomContractCreationService } from "../service/consumer/suiteRoomContractCreationService.js";
 import { slackMessageSender } from "../slack/slackMessageSender.js";
 
 moment.tz.setDefault("Asia/Seoul");
