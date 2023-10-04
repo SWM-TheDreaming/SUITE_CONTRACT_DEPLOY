@@ -6,7 +6,7 @@ dotenv.config();
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  defaultNetwork: "polygon_mumbai",
+  defaultNetwork: "polygon_main",
   networks: {
     // hardhat: {
     //   chainId: 1337,
