@@ -71,8 +71,8 @@ for await (const routeFile of routeFiles) {
 }
 
 // consumer append
-userRegistrationConsumers();
-suiteRoomContractCreationConsumer();
+// userRegistrationConsumers();
+// suiteRoomContractCreationConsumer();
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

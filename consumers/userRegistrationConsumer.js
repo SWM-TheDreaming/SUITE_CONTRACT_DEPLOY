@@ -1,6 +1,6 @@
 import kafka from "../kafka/kafka.js";
 import { slackMessageSender } from "../slack/slackMessageSender.js";
-import { userRregistrationService } from "../service/producer/userRegistrationService.js";
+import { userRregistrationService } from "../service/consumer/userRegistrationService.js";
 
 const producer = kafka.producer();
 const consumer = kafka.consumer({

@@ -1,4 +1,4 @@
-import sqlCon from "../db/sqlCon.js";
+import sqlCon from "../configs/sqlCon.js";
 import moment from "moment-timezone";
 import { ethers } from "ethers";
 import dotenv from "dotenv";

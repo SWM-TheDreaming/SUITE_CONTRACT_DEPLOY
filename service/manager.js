@@ -1,8 +1,20 @@
-import sqlCon from "../db/sqlCon.js";
-import moment from "moment-timezone";
-import { makeGroupHashedID } from "../lib/funcs.js";
+import path, { dirname } from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
+
 import dotenv from "dotenv";
+import moment from "moment-timezone";
+
+import sqlCon from "../configs/sqlCon.js";
+
+import { makeGroupHashedID, contractPdfController } from "../lib/funcs.js";
+
 import ContractManager from "../provider/ContractManager.js";
+import { contractHtmlProvider } from "../provider/contractHtmlProvider.js";
+import { certificatedHtmlProvider } from "../provider/certificatedHtmlProvider.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 dotenv.config();
 moment.tz.setDefault("Asia/Seoul");
@@ -47,7 +59,7 @@ export const signup = async (req, res) => {
 };
 
 export const start = async (req, res) => {
-  const nowTime = moment().format("YYYY-M-D H:m:s");
+  const createdDate = moment().format("YYYY년 M월 D일");
   const body = req.body;
 
   try {
@@ -55,7 +67,6 @@ export const start = async (req, res) => {
       body.suite_room_id,
       body.title.replace(" ", "")
     );
-
     const [[contractMetaInfo], [contractInfo], [isHashedKeyExist]] =
       await Promise.all([
         conn.execute("SELECT id FROM CONTRACT_META_INFO"),
@@ -64,7 +75,6 @@ export const start = async (req, res) => {
           hashedKey.crypt,
         ]),
       ]);
-
     if (isHashedKeyExist.length !== 0) {
       return res.status(403).json({
         error: "Forbidden",
@@ -73,9 +83,7 @@ export const start = async (req, res) => {
       });
     }
     console.log("key 유일성 검증 완료------------------------------");
-
     const lbContractId = (contractMetaInfo.length % contractInfo.length) + 1;
-
     await conn.execute(
       "INSERT INTO CONTRACT_META_INFO VALUES (?,?,?,?,?,?,?)",
       [
@@ -89,11 +97,9 @@ export const start = async (req, res) => {
       ]
     );
     console.log("계약서 메타 정보 저장 완료------------------------------");
-
     const contractManager = new ContractManager(
       process.env.POLYGON_MAIN_NET_WALLET_PRIVATE_KEY
     );
-
     const contract = await contractManager.getContract(hashedKey.crypt);
     console.log("계약서 컨트랙트 이서 시작------------------------------");
     const txData = contract.interface.encodeFunctionData("startSuiteRoom", [
@@ -109,7 +115,6 @@ export const start = async (req, res) => {
       body.minimum_attendance,
       body.minimum_mission_completion,
     ]);
-
     const gasFee = await contractManager.provider.getFeeData();
     const gasPrice = gasFee.maxFeePerGas;
     const gasLimit = await contractManager.provider.estimateGas({
@@ -117,7 +122,6 @@ export const start = async (req, res) => {
       data: txData,
       from: contractManager.wallet.address,
     });
-
     const tx = {
       to: contractManager.contractAddress,
       gasLimit,
@@ -125,13 +129,11 @@ export const start = async (req, res) => {
       data: txData,
     };
     console.log(tx);
-
     const sentTx = await contractManager.wallet.sendTransaction(tx);
     console.log("계약서 컨트랙트 이서 진행------------------------------");
     const receipt = await sentTx.wait();
     console.log("계약서 컨트랙트 이서 완료------------------------------");
     const txFee = parseInt(receipt.gasUsed) * parseInt(receipt.gasPrice);
-
     await conn.execute(
       "INSERT INTO TX_DASHBOARD VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
       [
@@ -150,6 +152,50 @@ export const start = async (req, res) => {
       ]
     );
     console.log("계약서 이력 작성 완료------------------------------");
+    console.log("계약서 pdf 작성 시작------------------------------");
+    const memberNameList = body.participant_names;
+    const memberIdList = body.participant_ids;
+    const finishDate = moment()
+      .add(body.group_period, "days")
+      .format("YYYY년 M월 D일");
+    const nowTime = moment().format("YYYY-M-D H:m:s");
+    memberNameList.forEach((memberName, idx) => {
+      const contractHtml = contractHtmlProvider(
+        body.suite_room_id,
+        memberName,
+        createdDate,
+        memberNameList,
+        body.group_deposit_per_person,
+        body.group_created_at,
+        finishDate,
+        body.minimum_attendance,
+        body.minimum_mission_completion,
+        sentTx.hash
+      );
+
+      const fileName = `contract/${body.suite_room_id}-${memberName}.pdf`;
+      contractPdfController(contractHtml, fileName, memberIdList[idx])
+        .then(async (s3Url) => {
+          await conn.execute(
+            "INSERT INTO PDF_INFO VALUES (?,?,?,?,?,?,?,?,?)",
+            [
+              null,
+              body.suite_room_id,
+              memberIdList[idx],
+              memberName,
+              sentTx.hash.slice(0, 12),
+              s3Url,
+              "CONTRACT",
+              nowTime,
+              nowTime,
+            ]
+          );
+          console.log("계약서 작성, S3버킷 저장, 이메일 전송 완료");
+        })
+        .catch((error) => {
+          console.error("Error creating PDF:", error);
+        });
+    });
 
     return res.status(201).json({
       message: "스위트룸을 성공적으로 시작했습니다.",

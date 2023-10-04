@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import sqlCon from "../db/sqlCon.js";
+import sqlCon from "../configs/sqlCon.js";
 const conn = sqlCon();
 
 const verifyToken = async (req, res, next) => {

@@ -1,4 +1,4 @@
-import sqlCon from "../../db/sqlCon.js";
+import sqlCon from "../../configs/sqlCon.js";
 import moment from "moment-timezone";
 import { makeGroupHashedID } from "../../lib/funcs.js";
 import dotenv from "dotenv";

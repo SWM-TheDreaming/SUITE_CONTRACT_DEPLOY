@@ -1,5 +1,5 @@
 import kafka from "../kafka/kafka.js";
-import sqlCon from "../db/sqlCon.js";
+import sqlCon from "../configs/sqlCon.js";
 import dotenv from "dotenv";
 import moment from "moment-timezone";
 import { suiteRoomContractCreationService } from "../service/consumer/suiteRoomContractCreationService.js";

@@ -1,5 +1,5 @@
 import express from "express";
-import sqlCon from "../db/sqlCon.js";
+import sqlCon from "../configs/sqlCon.js";
 const conn = sqlCon();
 const router = express.Router();
 
