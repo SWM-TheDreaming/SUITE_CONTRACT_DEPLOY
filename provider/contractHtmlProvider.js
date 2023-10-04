@@ -9,6 +9,7 @@ const __dirname = dirname(__filename);
  */
 export const contractHtmlProvider = (
   suiteRoomId,
+  title,
   memberName,
   startDate,
   memberNameList,
@@ -35,7 +36,7 @@ export const contractHtmlProvider = (
   return `<div style="width: 595px; height: 842px; position: relative; background: white;">
   <img style="left: 130px; top: 252px; position: absolute;" src="${backgroundLogoBase64}" />
   <div style="width: 252px; height: 17px; left: 58px; top: 35px; position: absolute; color: black; font-size: 24px; font-family: Inter; font-weight: 700; word-wrap: break-word">${suiteRoomId} 호실 </div>
-  <div style="width: 484px; height: 24px; left: 58px; top: 73px; position: absolute; color: black; font-size: 18px; font-family: Inter; font-weight: 700; word-wrap: break-word">토익 스터디 모집합니다~! 열정을 다해서 하실 분 우대!!</div>
+  <div style="width: 484px; height: 24px; left: 58px; top: 73px; position: absolute; color: black; font-size: 18px; font-family: Inter; font-weight: 700; word-wrap: break-word">${title}</div>
   <div style="width: 290px; height: 24px; left: 58px; top: 108px; position: absolute"><span style="color: black; font-size: 12px; font-family: Inter; font-weight: 400; word-wrap: break-word">란 곳에서 입주하신 </span><span style="color: black; font-size: 16px; font-family: Inter; font-weight: 700; word-wrap: break-word">${memberName}</span><span style="color: black; font-size: 12px; font-family: Inter; font-weight: 400; word-wrap: break-word"> 님.</span></div>
   <div style="width: 114px; height: 24px; left: 196px; top: 791px; position: absolute; color: black; font-size: 16px; font-family: Inter; font-weight: 700; word-wrap: break-word">The Dreaming: </div>
   <div style="width: 129px; height: 24px; left: 44px; top: 789px; position: absolute; color: black; font-size: 16px; font-family: Inter; font-weight: 700; word-wrap: break-word">${startDate}</div>
@@ -46,9 +47,7 @@ export const contractHtmlProvider = (
     } 의 스위트룸 개설 정보</span>
       <span style="color: black; font-size: 12px; font-family: Inter; font-weight: 400; word-wrap: break-word">
         <ul>
-          <li>참여자: ${memberNameList.map((m) => m).join(", ")}${
-    memberNameList[0]
-  }</li>
+          <li>참여자: ${memberNameList.map((m) => m).join(", ")}</li>
           <li>스위트룸 규모: ${memberNameList.length}인실</li>
           <li>보증금액: ${depositAmount}원</li>
           <li>모집기간: ${recruitStartDate} - ${startDate}</li>

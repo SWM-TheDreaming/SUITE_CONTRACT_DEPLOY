@@ -36,6 +36,7 @@ export const getGroupContract = async (req, res) => {
     const contractManager = new ContractManager(
       process.env.POLYGON_MAIN_NET_WALLET_PRIVATE_KEY
     );
+    console.log(hashedKey.crypt);
     const contract = await contractManager.getContract(hashedKey.crypt);
     const tx = await contract.getGroupContract(hashedKey.crypt);
 

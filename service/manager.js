@@ -60,6 +60,7 @@ export const signup = async (req, res) => {
 
 export const start = async (req, res) => {
   const createdDate = moment().format("YYYY년 M월 D일");
+  const nowTime = moment().format("YYYY-M-D H:m:s");
   const body = req.body;
 
   try {
@@ -158,10 +159,11 @@ export const start = async (req, res) => {
     const finishDate = moment()
       .add(body.group_period, "days")
       .format("YYYY년 M월 D일");
-    const nowTime = moment().format("YYYY-M-D H:m:s");
+
     memberNameList.forEach((memberName, idx) => {
       const contractHtml = contractHtmlProvider(
         body.suite_room_id,
+        body.title,
         memberName,
         createdDate,
         memberNameList,

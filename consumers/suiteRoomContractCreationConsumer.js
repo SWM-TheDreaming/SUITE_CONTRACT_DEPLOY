@@ -40,7 +40,8 @@ const suiteRoomContractCreationConsumer = async () => {
 
         data.participant_ids = JSON.parse(data.participant_ids);
         data.signatures = JSON.parse(data.signatures);
-
+        data.participant_names = JSON.parse(data.participant_names);
+        console.log(data);
         const txResult = await suiteRoomContractCreationService(data);
         if (txResult.type == "Error") {
           isErrorOccurInContract = true;

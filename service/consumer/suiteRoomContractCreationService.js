@@ -1,8 +1,10 @@
 import sqlCon from "../../configs/sqlCon.js";
 import moment from "moment-timezone";
-import { makeGroupHashedID } from "../../lib/funcs.js";
+import { makeGroupHashedID, contractPdfController } from "../../lib/funcs.js";
 import dotenv from "dotenv";
 import ContractManager from "../../provider/ContractManager.js";
+
+import { contractHtmlProvider } from "../../provider/contractHtmlProvider.js";
 
 dotenv.config();
 moment.tz.setDefault("Asia/Seoul");
@@ -40,11 +42,11 @@ export const suiteRoomContractCreationService = async (data) => {
       (contractMetaInfoLength[0].length % contractInfoLength[0].length) + 1;
 
     await conn.execute(
-      "INSERT INTO CONTRACT_META_INFO VALUES (?,?,?,?,?,?,?,?)",
+      "INSERT INTO CONTRACT_META_INFO VALUES (?,?,?,?,?,?,?)",
       [
         null,
-        body.suite_room_id,
-        body.title.replace(" ", ""),
+        data.suite_room_id,
+        data.title.replace(" ", ""),
         hashedKey.crypt,
         lbContractId,
         nowTime,
@@ -111,7 +113,52 @@ export const suiteRoomContractCreationService = async (data) => {
       ]
     );
     console.log("계약서 이력 작성 완료------------------------------");
+    console.log("계약서 pdf 작성 시작------------------------------");
+    const memberNameList = data.participant_names;
+    const memberIdList = data.participant_ids;
+    const createdDate = moment().format("YYYY년 M월 D일");
+    const finishDate = moment()
+      .add(data.group_period, "days")
+      .format("YYYY년 M월 D일");
 
+    memberNameList.forEach((memberName, idx) => {
+      const contractHtml = contractHtmlProvider(
+        data.suite_room_id,
+        data.title,
+        memberName,
+        createdDate,
+        memberNameList,
+        data.group_deposit_per_person,
+        data.group_created_at,
+        finishDate,
+        data.minimum_attendance,
+        data.minimum_mission_completion,
+        sentTx.hash
+      );
+
+      const fileName = `contract/${data.suite_room_id}-${memberName}.pdf`;
+      contractPdfController(contractHtml, fileName, memberIdList[idx])
+        .then(async (s3Url) => {
+          await conn.execute(
+            "INSERT INTO PDF_INFO VALUES (?,?,?,?,?,?,?,?,?)",
+            [
+              null,
+              data.suite_room_id,
+              memberIdList[idx],
+              memberName,
+              sentTx.hash.slice(0, 12),
+              s3Url,
+              "CONTRACT",
+              nowTime,
+              nowTime,
+            ]
+          );
+          console.log("계약서 작성, S3버킷 저장, 이메일 전송 완료");
+        })
+        .catch((error) => {
+          console.error("Error creating PDF:", error);
+        });
+    });
     return {
       type: "Success",
       message: "스위트룸을 성공적으로 시작했습니다.",
