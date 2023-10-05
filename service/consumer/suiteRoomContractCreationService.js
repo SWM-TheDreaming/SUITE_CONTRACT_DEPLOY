@@ -121,7 +121,7 @@ export const suiteRoomContractCreationService = async (data) => {
       .add(data.group_period, "days")
       .format("YYYY년 M월 D일");
 
-    memberNameList.forEach((memberName, idx) => {
+    memberNameList.forEach(async (memberName, idx) => {
       const contractHtml = contractHtmlProvider(
         data.suite_room_id,
         data.title,
@@ -137,7 +137,7 @@ export const suiteRoomContractCreationService = async (data) => {
       );
 
       const fileName = `contract/${data.suite_room_id}-${memberName}.pdf`;
-      contractPdfController(contractHtml, fileName, memberIdList[idx])
+      await contractPdfController(contractHtml, fileName, memberIdList[idx])
         .then(async (s3Url) => {
           await conn.execute(
             "INSERT INTO PDF_INFO VALUES (?,?,?,?,?,?,?,?,?)",

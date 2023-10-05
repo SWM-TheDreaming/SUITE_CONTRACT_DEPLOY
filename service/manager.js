@@ -7,7 +7,11 @@ import moment from "moment-timezone";
 
 import sqlCon from "../configs/sqlCon.js";
 
-import { makeGroupHashedID, contractPdfController } from "../lib/funcs.js";
+import {
+  makeGroupHashedID,
+  contractPdfController,
+  certificatedPdfController,
+} from "../lib/funcs.js";
 
 import ContractManager from "../provider/ContractManager.js";
 import { contractHtmlProvider } from "../provider/contractHtmlProvider.js";
@@ -159,8 +163,7 @@ export const start = async (req, res) => {
     const finishDate = moment()
       .add(body.group_period, "days")
       .format("YYYY년 M월 D일");
-
-    memberNameList.forEach((memberName, idx) => {
+    for await (const [idx, memberName] of memberNameList.entries()) {
       const contractHtml = contractHtmlProvider(
         body.suite_room_id,
         body.title,
@@ -176,7 +179,7 @@ export const start = async (req, res) => {
       );
 
       const fileName = `contract/${body.suite_room_id}-${memberName}.pdf`;
-      contractPdfController(contractHtml, fileName, memberIdList[idx])
+      await contractPdfController(contractHtml, fileName, memberIdList[idx])
         .then(async (s3Url) => {
           await conn.execute(
             "INSERT INTO PDF_INFO VALUES (?,?,?,?,?,?,?,?,?)",
@@ -197,7 +200,7 @@ export const start = async (req, res) => {
         .catch((error) => {
           console.error("Error creating PDF:", error);
         });
-    });
+    }
 
     return res.status(201).json({
       message: "스위트룸을 성공적으로 시작했습니다.",
@@ -226,10 +229,14 @@ export const stop = async (req, res) => {
       body.title.replace(" ", "")
     );
 
-    const [[contractMetaInfo]] = await Promise.all([
+    const [[contractMetaInfo], [txDataInfo]] = await Promise.all([
       conn.execute("SELECT * FROM CONTRACT_META_INFO WHERE hashed_key = ?", [
         hashedKey.crypt,
       ]),
+      conn.execute(
+        "SELECT * FROM TX_DASHBOARD WHERE hashed_key = ? and tx_func_name = ?",
+        [hashedKey.crypt, "startSuiteRoom"]
+      ),
     ]);
 
     if (contractMetaInfo.length === 0) {
@@ -238,13 +245,42 @@ export const stop = async (req, res) => {
         message: "존재하지 않는 Hashed_Key 입니다.",
       });
     }
+    console.log("key 유일성 검증 완료------------------------------");
 
     const contractManager = new ContractManager(
       process.env.POLYGON_MAIN_NET_WALLET_PRIVATE_KEY
     );
-    console.log(contractManager);
+
     const contract = await contractManager.getContract(hashedKey.crypt);
-    console.log(contract);
+    console.log("시작 계약서 TX 코드 요청------------------------------");
+    const readTx = await contract.getGroupContract(hashedKey.crypt);
+
+    const transformData = (data, keys) => {
+      return data.map((entry) =>
+        entry.reduce((obj, value, idx) => {
+          obj[keys[idx]] = typeof value === "bigint" ? value.toString() : value;
+          return obj;
+        }, {})
+      );
+    };
+
+    const groupContractInfoKeys = [
+      "user_id",
+      "title",
+      "group_capacity",
+      "group_deposit_per_person",
+      "group_period",
+      "recruitment_period",
+      "minimum_attendance",
+      "minimum_mission_completion",
+      "isRunning",
+    ];
+
+    const groupContractInfo = transformData(
+      [readTx[0].slice(0, 9)],
+      groupContractInfoKeys
+    )[0];
+    console.log("시작 계약서 TX 코드 확인 완료------------------------------");
     const txData = contract.interface.encodeFunctionData("stopSuiteRoom", [
       hashedKey.crypt,
       body.participant_ids,
@@ -268,8 +304,12 @@ export const stop = async (req, res) => {
       data: txData,
     };
     console.log(tx);
+    console.log("계약서 종료 및 정산 요청 전송------------------------------");
     const sentTx = await contractManager.wallet.sendTransaction(tx);
     const receipt = await sentTx.wait();
+    console.log(
+      "계약서 종료 및 정산 요청 전송 완료------------------------------"
+    );
     const txFee = parseInt(receipt.gasUsed) * parseInt(receipt.gasPrice);
     console.log(receipt);
 
@@ -289,6 +329,61 @@ export const stop = async (req, res) => {
         receipt.blockNumber,
         txFee,
       ]
+    );
+    const memberNameList = body.participant_names;
+    const memberIdList = body.participant_ids;
+    const missionRate = body.participant_mission;
+    const attendanceRate = body.participant_attendance;
+    console.log(
+      "수료증 PDF 생성 및 이메일 전송 배치 작업 시작------------------------------"
+    );
+    for await (const [idx, memberName] of memberNameList.entries()) {
+      if (
+        missionRate[idx] < groupContractInfo["minimum_mission_completion"] ||
+        attendanceRate[idx] < groupContractInfo["minimum_attendance"]
+      ) {
+        continue;
+      }
+      const certificatedHtml = certificatedHtmlProvider(
+        body.suite_room_id,
+        body.title,
+        txDataInfo[0].tx_hash,
+        sentTx.hash,
+        groupContractInfo["minimum_mission_completion"],
+        groupContractInfo["minimum_attendance"],
+        missionRate[idx],
+        attendanceRate[idx],
+        memberNameList[idx]
+      );
+      const fileName = `certificated/${body.suite_room_id}-${memberName}.pdf`;
+      await certificatedPdfController(
+        certificatedHtml,
+        fileName,
+        memberIdList[idx]
+      )
+        .then(async (s3Url) => {
+          await conn.execute(
+            "INSERT INTO PDF_INFO VALUES (?,?,?,?,?,?,?,?,?)",
+            [
+              null,
+              body.suite_room_id,
+              memberIdList[idx],
+              memberName,
+              sentTx.hash.slice(0, 12),
+              s3Url,
+              "CERTIFICATED",
+              nowTime,
+              nowTime,
+            ]
+          );
+          console.log("수료증 작성, S3버킷 저장, 이메일 전송 완료");
+        })
+        .catch((error) => {
+          console.error("Error creating PDF:", error);
+        });
+    }
+    console.log(
+      "수료증 PDF 생성 및 이메일 전송 배치 작업 완료------------------------------"
     );
 
     return res.status(201).json({
