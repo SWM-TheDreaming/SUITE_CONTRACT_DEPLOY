@@ -160,3 +160,36 @@ export const getTransactionTx = async (req, res) => {
     });
   }
 };
+
+export const getContractPdf = async (req, res) => {
+  try {
+    const body = req.body;
+    if (body.tx_code.length != 12) {
+      return res.status(409).json({
+        message: "tx_code의 길이가 올바르지 않습니다. 길이를 12로 맞춰주세요.",
+      });
+    }
+    if (body.tx_code.slice(0, 2) != "0x") {
+      return res.status(409).json({
+        message: "tx_code는 0x로 시작해야합니다. 올바른 형식을 맞춰주세요.",
+      });
+    }
+    console.log(body);
+    const [findPdfResult] = await conn.execute(
+      "SELECT * FROM PDF_INFO WHERE tx_code = ? and user_id = ?",
+      [body.tx_code, body.user_id]
+    );
+    console.log(body.tx_code, body.user_id);
+    console.log(findPdfResult);
+    return res.status(200).json({
+      message: "사용자의 TX_CODE에 따른 계약서 원본입니다.",
+      pdf_link: findPdfResult[0].s3_url,
+      pdf_type: findPdfResult[0].pdf_type,
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(400).json({
+      message: e.reason,
+    });
+  }
+};

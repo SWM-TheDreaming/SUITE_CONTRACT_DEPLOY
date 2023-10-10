@@ -12,6 +12,7 @@ import fs from "fs";
 
 import suiteRoomContractCreationConsumer from "./consumers/suiteRoomContractCreationConsumer.js";
 import userRegistrationConsumers from "./consumers/userRegistrationConsumer.js";
+import stopSuiteConsumer from "./consumers/stopStudyConsumer.js";
 
 dotenv.config();
 
@@ -71,8 +72,9 @@ for await (const routeFile of routeFiles) {
 }
 
 // consumer append
-// userRegistrationConsumers();
-// suiteRoomContractCreationConsumer();
+userRegistrationConsumers();
+suiteRoomContractCreationConsumer();
+stopSuiteConsumer();
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

@@ -125,6 +125,7 @@ export const suiteRoomContractCreationService = async (data) => {
       const contractHtml = contractHtmlProvider(
         data.suite_room_id,
         data.title,
+        data.leader_name,
         memberName,
         createdDate,
         memberNameList,

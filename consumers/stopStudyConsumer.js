@@ -2,7 +2,7 @@ import kafka from "../kafka/kafka.js";
 import sqlCon from "../configs/sqlCon.js";
 import dotenv from "dotenv";
 import moment from "moment-timezone";
-import { suiteRoomContractCreationService } from "../service/consumer/suiteRoomContractCreationService.js";
+import { stopStudyService } from "../service/consumer/stopStudyService.js";
 import { slackMessageSender } from "../slack/slackMessageSender.js";
 
 moment.tz.setDefault("Asia/Seoul");
@@ -11,18 +11,17 @@ const conn = sqlCon();
 
 const producer = kafka.producer();
 const consumer = kafka.consumer({
-  groupId: "suiteRoomContractCreationConsumers",
+  groupId: "stopStudyConsumers",
 });
 
-const SUITEROOM_CONTRACT_CREATION = "SuiteRoom-Contract-Creation";
-const CONTRACT_DELIVERY_NOTIFICATION = "Contract-Delivery-Notification";
+const STUDY_STOP = "Study-Stop";
 
 const consumerSubscribe = {
-  topic: SUITEROOM_CONTRACT_CREATION,
+  topic: STUDY_STOP,
   fromBeginning: true,
 };
 
-const suiteRoomContractCreationConsumer = async () => {
+const stopSuiteConsumer = async () => {
   let tryNum = 1;
   let isErrorOccurInContract = false;
   await consumer.subscribe(consumerSubscribe);
@@ -37,38 +36,35 @@ const suiteRoomContractCreationConsumer = async () => {
         console.log("----------------Message Consuming-------------------");
         const messageJson = JSON.parse(message.value.toString("utf-8"));
         const data = messageJson.data;
-        // console.log(data);
-        // data.participant_ids = JSON.parse(data.participant_ids);
-        // data.signatures = JSON.parse(data.signatures);
-        // data.participant_names = JSON.parse(data.participant_names);
         console.log(data);
-        const txResult = await suiteRoomContractCreationService(data);
+        const txResult = await stopStudyService(data);
+
         if (txResult.type == "Error") {
           isErrorOccurInContract = true;
-          const contractCreateError = new Error("Contract Create Error");
+          const contractCreateError = new Error("Contract Transaction Error");
           contractCreateError.data = txResult;
           throw contractCreateError;
-        } else if (txResult.type == "Account_Error") {
-          const accountBlockError = new Error("Account Block Error");
+        } else if (txResult.type == "API-Error") {
+          const accountBlockError = new Error("API ERROR OCCURED");
           contractCreateError.data = txResult;
           throw accountBlockError;
         }
         console.log("----------------Finish Consuming-------------------");
         console.log("----------------Consumed Data Info-------------------");
         console.log(txResult);
-        const producedMessage = {
-          uuid: "ContractDeliveryNotificationProducer/" + nowTime,
-          data: txResult.receipt,
-        };
-        console.log(producedMessage);
-        await producer.send({
-          topic: CONTRACT_DELIVERY_NOTIFICATION,
-          messages: [
-            {
-              value: JSON.stringify(producedMessage),
-            },
-          ],
-        });
+        // const producedMessage = {
+        //   uuid: "ContractDeliveryNotificationProducer/" + nowTime,
+        //   data: txResult.receipt,
+        // };
+        // console.log(producedMessage);
+        // await producer.send({
+        //   topic: CONTRACT_DELIVERY_NOTIFICATION,
+        //   messages: [
+        //     {
+        //       value: JSON.stringify(producedMessage),
+        //     },
+        //   ],
+        // });
       } catch (error) {
         if (isErrorOccurInContract) {
           console.log(error.data);
@@ -95,7 +91,6 @@ const suiteRoomContractCreationConsumer = async () => {
           console.log(
             "----------------Three Time Over. Check Slack Error Msg-------------------"
           );
-          console.log(error);
           slackMessageSender(
             topic,
             message,
@@ -108,4 +103,4 @@ const suiteRoomContractCreationConsumer = async () => {
   });
 };
 
-export default suiteRoomContractCreationConsumer;
+export default stopSuiteConsumer;

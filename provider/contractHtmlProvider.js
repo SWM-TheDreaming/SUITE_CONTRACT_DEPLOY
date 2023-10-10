@@ -10,6 +10,7 @@ const __dirname = dirname(__filename);
 export const contractHtmlProvider = (
   suiteRoomId,
   title,
+  leader_name,
   memberName,
   startDate,
   memberNameList,
@@ -42,9 +43,7 @@ export const contractHtmlProvider = (
   <div style="width: 129px; height: 24px; left: 44px; top: 789px; position: absolute; color: black; font-size: 16px; font-family: Inter; font-weight: 700; word-wrap: break-word">${startDate}</div>
   <div style="width: 311px; height: 24px; left: 145px; top: 171px; position: absolute; color: black; font-size: 12px; font-family: Inter; font-weight: 400; word-wrap: break-word">스위트룸 체크인 서약서 및 보증금 계약서 내용 고지드립니다.</div>
   <div style="width: 336px; height: 158px; left: 58px; top: 416px; position: absolute">
-    <span style="color: black; font-size: 12px; font-family: Inter; font-weight: bold; word-wrap: break-word">가. 호스트 ${
-      memberNameList[0]
-    } 의 스위트룸 개설 정보</span>
+    <span style="color: black; font-size: 12px; font-family: Inter; font-weight: bold; word-wrap: break-word">가. 호스트 ${leader_name} 의 스위트룸 개설 정보</span>
       <span style="color: black; font-size: 12px; font-family: Inter; font-weight: 400; word-wrap: break-word">
         <ul>
           <li>참여자: ${memberNameList.map((m) => m).join(", ")}</li>
@@ -53,7 +52,7 @@ export const contractHtmlProvider = (
           <li>모집기간: ${recruitStartDate} - ${startDate}</li>
         </ul>
         <span style="color: black; font-size: 12px; font-family: Inter; font-weight: bold; word-wrap: break-word">
-          나. 호스트 ${memberNameList[0]}의 스위트룸 보증금 환급 조건</span>
+          나. 호스트 ${leader_name}의 스위트룸 보증금 환급 조건</span>
           <ul>
             <li>스위트룸 체크아웃: ${checkOutDate}</li>
             <li>최소 출석률: ${minAttendanceRate}%</li>
