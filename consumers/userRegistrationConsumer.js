@@ -26,6 +26,7 @@ const userRegistrationConsumers = async () => {
         console.log("----------------Message Consuming-------------------");
         const messageJson = JSON.parse(message.value.toString("utf-8"));
         const data = messageJson.data;
+        console.log(data);
         const result = await userRregistrationService(data);
         console.log(result);
       } catch (error) {
