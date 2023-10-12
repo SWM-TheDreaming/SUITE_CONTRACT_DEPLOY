@@ -46,7 +46,7 @@ const stopSuiteConsumer = async () => {
           throw contractCreateError;
         } else if (txResult.type == "API-Error") {
           const accountBlockError = new Error("API ERROR OCCURED");
-          contractCreateError.data = txResult;
+          accountBlockError.data = txResult;
           throw accountBlockError;
         }
         console.log("----------------Finish Consuming-------------------");
