@@ -71,10 +71,13 @@ for await (const routeFile of routeFiles) {
   );
 }
 
+const router = await import(`./routes/index.js`);
+app.use(`/`, router.default);
+
 // consumer append
-userRegistrationConsumers();
-suiteRoomContractCreationConsumer();
-stopSuiteConsumer();
+// userRegistrationConsumers();
+// suiteRoomContractCreationConsumer();
+// stopSuiteConsumer();
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
