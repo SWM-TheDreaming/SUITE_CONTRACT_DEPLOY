@@ -3,6 +3,6 @@ import { elbHealthCheckService } from "../service/healthCheck.js";
 const router = express.Router();
 
 /* GET home page. */
-router.post("/", elbHealthCheckService);
+router.get("/", elbHealthCheckService);
 
 export default router;
