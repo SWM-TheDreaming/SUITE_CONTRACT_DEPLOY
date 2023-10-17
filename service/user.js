@@ -164,6 +164,7 @@ export const getTransactionTx = async (req, res) => {
 export const getContractPdf = async (req, res) => {
   try {
     const body = req.body;
+    const userId = req.decoded.sub;
     if (body.tx_code.length != 12) {
       return res.status(409).json({
         message: "tx_code의 길이가 올바르지 않습니다. 길이를 12로 맞춰주세요.",
@@ -177,9 +178,9 @@ export const getContractPdf = async (req, res) => {
     console.log(body);
     const [findPdfResult] = await conn.execute(
       "SELECT * FROM PDF_INFO WHERE tx_code = ? and user_id = ?",
-      [body.tx_code, body.user_id]
+      [body.tx_code, userId]
     );
-    console.log(body.tx_code, body.user_id);
+    console.log(body.tx_code, userId);
     console.log(findPdfResult);
     return res.status(200).json({
       message: "사용자의 TX_CODE에 따른 계약서 원본입니다.",
