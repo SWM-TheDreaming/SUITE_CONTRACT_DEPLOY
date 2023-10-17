@@ -182,6 +182,11 @@ export const getContractPdf = async (req, res) => {
     );
     console.log(body.tx_code, userId);
     console.log(findPdfResult);
+    if (findPdfResult.length == 0) {
+      return res.status(400).json({
+        message: "존재하지 않는 계약서 코드입니다.",
+      });
+    }
     return res.status(200).json({
       message: "사용자의 TX_CODE에 따른 계약서 원본입니다.",
       pdf_link: findPdfResult[0].s3_url,
