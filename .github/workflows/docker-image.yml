@@ -44,5 +44,5 @@ jobs:
       - name: Build & Push to ECR
         run: |
           docker build -t suite-block-chain-service:$GITHUB_SHA .
-          docker tag suite-block-chain-service:$GITHUB_SHA ${{ secrets.AWS_ACCOUNT_NUM }}.dkr.ecr.ap-northeast-2.amazonaws.com/suite-block-chain-service:$GITHUB_SHA
-          docker push ${{ secrets.AWS_ACCOUNT_NUM }}.dkr.ecr.ap-northeast-2.amazonaws.com/suite-block-chain-service:$GITHUB_SHA
+          docker tag suite-block-chain-service:$GITHUB_SHA ${{ secrets.AWS_ACCOUNT_NUM }}.dkr.ecr.ap-northeast-2.amazonaws.com/prod-suite-block-chain-service:$GITHUB_SHA
+          docker push ${{ secrets.AWS_ACCOUNT_NUM }}.dkr.ecr.ap-northeast-2.amazonaws.com/prod-suite-block-chain-service:$GITHUB_SHA
