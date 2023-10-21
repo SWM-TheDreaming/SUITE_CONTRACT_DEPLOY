@@ -2,9 +2,9 @@ name: Docker Image SUITE_BLOCK_CHAIN_SERVICE CI
 
 on:
   push:
-    branches: ["server-main"]
+    branches: ["server-prod"]
   pull_request:
-    branches: ["server-main"]
+    branches: ["server-prod"]
 
 jobs:
   build:
