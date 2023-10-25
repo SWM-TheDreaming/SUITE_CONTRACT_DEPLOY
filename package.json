@@ -41,6 +41,7 @@
     "phantom": "^6.3.0",
     "pm2": "^5.2.2",
     "puppeteer": "^21.3.6",
+    "puppeteer-core": "^21.4.1",
     "redis": "^4.3.1"
   }
 }
