@@ -44,6 +44,14 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
  && rm -rf /var/lib/apt/lists/*
 
+RUN mkdir /usr/share/fonts/nanumfont
+
+RUN wget http://cdn.naver.com/naver/NanumFont/fontfiles/NanumFont_TTF_ALL.zip
+
+RUN unzip NanumFont_TTF_ALL.zip -d /usr/share/fonts/nanumfont
+
+RUN fc-cache -f -v
+
 # 애플리케이션 의존성을 복사합니다.
 COPY package*.json ./
 
