@@ -146,6 +146,10 @@ export const stopStudyService = async (data) => {
       ) {
         continue;
       }
+
+      console.log(
+        `${memberName}의 수료증 제작 시작------------------------------`
+      );
       const certificatedHtml = certificatedHtmlProvider(
         data.suite_room_id,
         data.title,
