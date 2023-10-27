@@ -44,6 +44,7 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
  && rm -rf /var/lib/apt/lists/*
 
+# 한글 폰트 설정
 RUN mkdir /usr/share/fonts/nanumfont
 
 RUN wget http://cdn.naver.com/naver/NanumFont/fontfiles/NanumFont_TTF_ALL.zip
