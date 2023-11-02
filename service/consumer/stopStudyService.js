@@ -1,9 +1,7 @@
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
-
 import dotenv from "dotenv";
 import moment from "moment-timezone";
-
 import sqlCon from "../../configs/sqlCon.js";
 
 import {
