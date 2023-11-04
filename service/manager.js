@@ -79,82 +79,82 @@ export const start = async (req, res) => {
           hashedKey.crypt,
         ]),
       ]);
-    // if (isHashedKeyExist.length !== 0) {
-    //   return res.status(403).json({
-    //     error: "Forbidden",
-    //     message:
-    //       "이미 존재하는 hashedKey를 가진 suite_room_id와 title 쌍입니다.",
-    //   });
-    // }
+    if (isHashedKeyExist.length !== 0) {
+      return res.status(403).json({
+        error: "Forbidden",
+        message:
+          "이미 존재하는 hashedKey를 가진 suite_room_id와 title 쌍입니다.",
+      });
+    }
     console.log("key 유일성 검증 완료------------------------------");
-    // const lbContractId = (contractMetaInfo.length % contractInfo.length) + 1;
-    // await conn.execute(
-    //   "INSERT INTO CONTRACT_META_INFO VALUES (?,?,?,?,?,?,?)",
-    //   [
-    //     null,
-    //     body.suite_room_id,
-    //     body.title.replace(" ", ""),
-    //     hashedKey.crypt,
-    //     lbContractId,
-    //     nowTime,
-    //     nowTime,
-    //   ]
-    // );
-    // console.log("계약서 메타 정보 저장 완료------------------------------");
-    // const contractManager = new ContractManager(
-    //   process.env.POLYGON_MAIN_NET_WALLET_PRIVATE_KEY
-    // );
-    // const contract = await contractManager.getContract(hashedKey.crypt);
-    // console.log("계약서 컨트랙트 이서 시작------------------------------");
-    // const txData = contract.interface.encodeFunctionData("startSuiteRoom", [
-    //   hashedKey.crypt,
-    //   body.leader_id,
-    //   body.title.replace(" ", ""),
-    //   body.participant_ids,
-    //   body.signatures,
-    //   body.group_capacity,
-    //   body.group_deposit_per_person,
-    //   body.group_period,
-    //   body.recruitment_period,
-    //   body.minimum_attendance,
-    //   body.minimum_mission_completion,
-    // ]);
-    // const gasFee = await contractManager.provider.getFeeData();
-    // const gasPrice = gasFee.maxFeePerGas;
-    // const gasLimit = await contractManager.provider.estimateGas({
-    //   to: contractManager.contractAddress,
-    //   data: txData,
-    //   from: contractManager.wallet.address,
-    // });
-    // const tx = {
-    //   to: contractManager.contractAddress,
-    //   gasLimit,
-    //   gasPrice,
-    //   data: txData,
-    // };
-    // console.log(tx);
-    // const sentTx = await contractManager.wallet.sendTransaction(tx);
-    // console.log("계약서 컨트랙트 이서 진행------------------------------");
-    // const receipt = await sentTx.wait();
-    // console.log("계약서 컨트랙트 이서 완료------------------------------");
-    // const txFee = parseInt(receipt.gasUsed) * parseInt(receipt.gasPrice);
-    // await conn.execute(
-    //   "INSERT INTO TX_DASHBOARD VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-    //   [
-    //     null,
-    //     hashedKey.crypt,
-    //     "TX",
-    //     sentTx.hash,
-    //     nowTime,
-    //     "startSuiteRoom",
-    //     "계약서 내용 스마트 컨트랙트 이서",
-    //     "SUITE",
-    //     body,
-    //     receipt.to,
-    //     receipt.blockNumber,
-    //     txFee,
-    //   ]
-    // );
+    const lbContractId = (contractMetaInfo.length % contractInfo.length) + 1;
+    await conn.execute(
+      "INSERT INTO CONTRACT_META_INFO VALUES (?,?,?,?,?,?,?)",
+      [
+        null,
+        body.suite_room_id,
+        body.title.replace(" ", ""),
+        hashedKey.crypt,
+        lbContractId,
+        nowTime,
+        nowTime,
+      ]
+    );
+    console.log("계약서 메타 정보 저장 완료------------------------------");
+    const contractManager = new ContractManager(
+      process.env.POLYGON_MAIN_NET_WALLET_PRIVATE_KEY
+    );
+    const contract = await contractManager.getContract(hashedKey.crypt);
+    console.log("계약서 컨트랙트 이서 시작------------------------------");
+    const txData = contract.interface.encodeFunctionData("startSuiteRoom", [
+      hashedKey.crypt,
+      body.leader_id,
+      body.title.replace(" ", ""),
+      body.participant_ids,
+      body.signatures,
+      body.group_capacity,
+      body.group_deposit_per_person,
+      body.group_period,
+      body.recruitment_period,
+      body.minimum_attendance,
+      body.minimum_mission_completion,
+    ]);
+    const gasFee = await contractManager.provider.getFeeData();
+    const gasPrice = gasFee.maxFeePerGas;
+    const gasLimit = await contractManager.provider.estimateGas({
+      to: contractManager.contractAddress,
+      data: txData,
+      from: contractManager.wallet.address,
+    });
+    const tx = {
+      to: contractManager.contractAddress,
+      gasLimit,
+      gasPrice,
+      data: txData,
+    };
+    console.log(tx);
+    const sentTx = await contractManager.wallet.sendTransaction(tx);
+    console.log("계약서 컨트랙트 이서 진행------------------------------");
+    const receipt = await sentTx.wait();
+    console.log("계약서 컨트랙트 이서 완료------------------------------");
+    const txFee = parseInt(receipt.gasUsed) * parseInt(receipt.gasPrice);
+    await conn.execute(
+      "INSERT INTO TX_DASHBOARD VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+      [
+        null,
+        hashedKey.crypt,
+        "TX",
+        sentTx.hash,
+        nowTime,
+        "startSuiteRoom",
+        "계약서 내용 스마트 컨트랙트 이서",
+        "SUITE",
+        body,
+        receipt.to,
+        receipt.blockNumber,
+        txFee,
+      ]
+    );
     console.log("계약서 이력 작성 완료------------------------------");
     console.log("계약서 pdf 작성 시작------------------------------");
     const memberNameList = body.participant_names;
@@ -209,11 +209,11 @@ export const start = async (req, res) => {
 
     return res.status(201).json({
       message: "스위트룸을 성공적으로 시작했습니다.",
-      // receipt,
-      // txFee,
-      // blockHash: receipt.blockHash,
-      // txHash: sentTx.hash,
-      // contractAddress: receipt.to,
+      receipt,
+      txFee,
+      blockHash: receipt.blockHash,
+      txHash: sentTx.hash,
+      contractAddress: receipt.to,
     });
   } catch (err) {
     console.error(err);
