@@ -19,6 +19,7 @@ class ContractManager {
       "SELECT cmi.hashed_key as hashed_key, ci.contract_id as contract_id, ci.contract_address as contract_address, ci.contractABI as abi  FROM CONTRACT_INFO ci JOIN CONTRACT_META_INFO cmi ON ci.contract_id = cmi.contract_id WHERE cmi.hashed_key = ?",
       [_hashed_key]
     );
+    console.log(contractJoinResult);
 
     const selectABIResult = contractJoinResult[0].abi;
     const contractAddress = contractJoinResult[0].contract_address;
