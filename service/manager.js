@@ -189,7 +189,11 @@ export const start = async (req, res) => {
               body.suite_room_id,
               memberIdList[idx],
               memberName,
-              sentTx.hash.slice(0, 12),
+              // sentTx.hash.slice(0, 12),
+              "0xa2aa29bbc08e36b9d382510a35d07fca40f684b963740949051bf3d01aff78b5".slice(
+                0,
+                12
+              ),
               s3Url,
               "CONTRACT",
               nowTime,
@@ -205,11 +209,11 @@ export const start = async (req, res) => {
 
     return res.status(201).json({
       message: "스위트룸을 성공적으로 시작했습니다.",
-      receipt,
-      txFee,
-      blockHash: receipt.blockHash,
-      txHash: sentTx.hash,
-      contractAddress: receipt.to,
+      // receipt,
+      // txFee,
+      // blockHash: receipt.blockHash,
+      // txHash: sentTx.hash,
+      // contractAddress: receipt.to,
     });
   } catch (err) {
     console.error(err);
