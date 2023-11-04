@@ -174,7 +174,8 @@ export const start = async (req, res) => {
         finishDate,
         body.minimum_attendance,
         body.minimum_mission_completion,
-        sentTx.hash
+        // sentTx.hash
+        "0xa2aa29bbc08e36b9d382510a35d07fca40f684b963740949051bf3d01aff78b5"
       );
 
       const fileName = `contract/${body.suite_room_id}-${memberName}.pdf`;
