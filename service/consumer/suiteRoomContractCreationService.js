@@ -55,6 +55,7 @@ export const suiteRoomContractCreationService = async (data) => {
     );
 
     console.log("계약서 메타 정보 저장 완료------------------------------");
+    console.log("계약서 매니저 생성 ------------------------------");
     const contractManager = new ContractManager(
       process.env.POLYGON_MAIN_NET_WALLET_PRIVATE_KEY
     );
