@@ -166,6 +166,7 @@ export const start = async (req, res) => {
       const contractHtml = contractHtmlProvider(
         body.suite_room_id,
         body.title,
+        memberNameList[0],
         memberName,
         createdDate,
         memberNameList,
