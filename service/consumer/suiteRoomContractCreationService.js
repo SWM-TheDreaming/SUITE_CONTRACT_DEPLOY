@@ -113,8 +113,8 @@ export const suiteRoomContractCreationService = async (data) => {
         txFee,
       ]
     );
-    console.log("계약서 이력 작성 완료------------------------------");
-    console.log("계약서 pdf 작성 시작------------------------------");
+    console.log("계약서 이력 작성 완료------------------------- -----");
+    console.log("계약서 pdf 작성 시작------------------------- -----");
     const memberNameList = data.participant_names;
     const memberIdList = data.participant_ids;
     const createdDate = moment().format("YYYY년 M월 D일");
