@@ -33,6 +33,7 @@ export const contractHtmlProvider = (
   const signImageBase64 = encodeImageToBase64(
     path.join(__dirname, "../public/images/sign.png")
   );
+  console.log(memberNameList);
 
   return `<div style="width: 595px; height: 842px; position: relative; background: white;">
   <img style="left: 130px; top: 252px; position: absolute;" src="${backgroundLogoBase64}" />
