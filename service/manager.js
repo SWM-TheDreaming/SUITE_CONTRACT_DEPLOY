@@ -83,7 +83,7 @@ export const start = async (req, res) => {
       return res.status(403).json({
         error: "Forbidden",
         message:
-          "이미 존재하는 hashedKey를 가진 suite_room_id와 title 쌍입니다.",
+          "이미 존재하는 hashedKey를 가진 suite_room_id 와 title 쌍입니다.",
       });
     }
     console.log("key 유일성 검증 완료------------------------------");
